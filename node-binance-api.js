@@ -2110,6 +2110,10 @@ let api = function Binance( options = {} ) {
             if ( Binance.options.future_account_config_update_callback ) {
                 Binance.options.future_account_config_update_callback( fUserConfigDataAccountUpdateConvertData( data ) );
             }
+        } else if ( type === 'listenKeyExpired' ) {
+            if ( Binance.options.future_subscribed_callback ) {
+                Binance.options.future_subscribed_callback( type );
+            }
         } else {
             Binance.options.log( 'Unexpected userFutureData: ' + type );
         }
@@ -3997,8 +4001,8 @@ let api = function Binance( options = {} ) {
             return promiseRequest( 'v1/adlQuantile', params, { base:fapi, type:'SIGNED' } );
         },
 
-        futuresUserTrades: async ( symbol, params = {} ) => {
-            params.symbol = symbol;
+        futuresUserTrades: async ( symbol = false, params = {} ) => {
+            if ( symbol ) params.symbol = symbol;
             return promiseRequest( 'v1/userTrades', params, { base:fapi, type:'SIGNED' } );
         },
 
@@ -4129,6 +4133,11 @@ let api = function Binance( options = {} ) {
             return promiseRequest( 'v1/order', params, { base:fapi, type:'SIGNED', method:'DELETE' } );
         },
 
+        futuresCancelMultiple: async ( symbol, params = {} ) => { // Either orderId or origClientOrderId must be sent
+            params.symbol = symbol;
+            return promiseRequest( 'v1/batchOrders', params, { base:fapi, type:'SIGNED', method:'DELETE' } );
+        },
+
         futuresCancelAll: async ( symbol, params = {} ) => {
             params.symbol = symbol;
             return promiseRequest( 'v1/allOpenOrders', params, { base:fapi, type:'SIGNED', method:'DELETE' } );
@@ -4177,7 +4186,6 @@ let api = function Binance( options = {} ) {
         Cancel multiple orders DELETE /fapi/v1/batchOrders
         New Future Account Transfer POST https://api.binance.com/sapi/v1/futures/transfer
         Get Postion Margin Change History (TRADE)
-
         wss://fstream.binance.com/ws/<listenKey>
         Diff. Book Depth Streams (250ms, 100ms, or realtime): <symbol>@depth OR <symbol>@depth@100ms OR <symbol>@depth@0ms
         Partial Book Depth Streams (5, 10, 20): <symbol>@depth<levels> OR <symbol>@depth<levels>@100ms
@@ -5401,6 +5409,15 @@ let api = function Binance( options = {} ) {
                 }
 
                 apiRequest( url + 'v1/listenKey', {}, function ( error, response ) {
+                    if(error){
+                        console.log( 'WebSocket ERROR: ' +
+                            ( error.code ? ' (' + error.code + ')' : '' ) +
+                            ( error.message ? ' ' + error.message : '' ) );
+                        if ( subscribed_callback ) subscribed_callback( 'badRequest' );
+                        subscribed_callback = undefined;
+                        Binance.options.future_subscribed_callback = undefined;
+                        return;
+                    }
                     Binance.options.listenFutureKey = response.listenKey;
                     setTimeout( function userDataKeepAlive() { // keepalive
                         try {
@@ -5416,6 +5433,7 @@ let api = function Binance( options = {} ) {
                     Binance.options.future_account_update_callback = account_update_callback;
                     Binance.options.future_account_config_update_callback = account_config_update_callback;
                     Binance.options.future_order_update_callback = order_update_callback;
+                    Binance.options.future_subscribed_callback = subscribed_callback;
                     const subscription = futuresSubscribe( Binance.options.listenFutureKey, userFutureDataHandler, { reconnect } );
                     if ( subscribed_callback ) subscribed_callback( subscription.endpoint );
                 }, 'POST' );
