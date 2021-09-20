@@ -1502,7 +1502,7 @@ export default class Binance {
      * @param {string} endpoint - the string associated with the endpoint
      * @return {undefined}
      */
-    deliveryTerminate(endpoint: string);
+    deliveryTerminate(endpoint: string): any;
     deliveryTerminate(...args: any): any;
 
     /**
