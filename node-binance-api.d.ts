@@ -232,7 +232,7 @@ export interface IConstructorArgs {
     timeOffset: number;
 }
 
-class Binance {
+export default class Binance {
 
     constructor(options?: Partial<IConstructorArgs>);
     constructor(pathToFile?: string);
@@ -1584,5 +1584,3 @@ class Binance {
     websockets: IWebsockets;
 
 }
-
-export default Binance;
