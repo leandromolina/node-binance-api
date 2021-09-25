@@ -2640,7 +2640,8 @@ let api = function Binance( options = {} ) {
         */
         roundTicks: function ( price, tickSize ) {
             const formatter = new Intl.NumberFormat( 'en-US', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 8 } );
-            const precision = formatter.format( tickSize ).split( '.' )[1].length || 0;
+            const pre_precision = formatter.format( tickSize ).split( '.' )[1]
+            const precision = pre_precision?.length || 0;
             if ( typeof price === 'string' ) price = parseFloat( price );
             return price.toFixed( precision );
         },
